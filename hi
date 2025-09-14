@@ -1,0 +1,263 @@
+public static <V> void strongConnectedComponents(Graph<V> g) {
+	// Reset node's status
+	g.resetStatus();
+
+	// First DFS
+	LinkedList<Graph.Node<V>> stack = new LinkedList<>();
+	for(Graph.Node<V> n : g.getNodes()) {
+	    if(n.state == Graph.Node.Status.UNEXPLORED)
+		DDFS(n, stack);
+	}
+
+	// Reset node's status
+	g.resetStatus();
+
+	// Second DFS on the transposed graph
+	for(Graph.Node<V> n : stack) {
+	    if(n.state == Graph.Node.Status.UNEXPLORED) {
+		LinkedList<Graph.Node<V>> ret = new LinkedList<>();
+		transposedDFS(n, ret);
+		
+		System.out.println("Strong connected component:");
+		for(Graph.Node<V> cur : ret)
+		    System.out.print(cur.value + " ");
+		System.out.println("");
+	    }
+	}
+}
+
+private static<V> void transposedDFS(Graph.Node<V> nd, LinkedList<Graph.Node<V>> ret) {
+        if(nd.state == Graph.Node.Status.EXPLORING)
+            return;
+        
+        if(nd.state == Graph.Node.Status.EXPLORED)
+            return;
+        
+        nd.state = Graph.Node.Status.EXPLORING;
+        for(Graph.Node<V> cur : nd.inEdges)
+            transposedDFS(cur, ret);
+        
+        ret.addLast(nd);
+        nd.state = Graph.Node.Status.EXPLORED;
+}
+
+public static <V> void topologicalSort(Graph<V> g) {
+        // Reset node's status
+        g.resetStatus();
+
+        LinkedList<Graph.Node<V>> ts = new LinkedList<Graph.Node<V>>();
+        
+        for(Graph.Node<V> nd : g.getNodes()) {
+            if(nd.state == Graph.Node.Status.UNEXPLORED) {
+                if(DDFS(nd, ts) > 0) {
+                    System.out.println("Impossibile ottenere ordine topologico, il grafo non è un DAG");
+                    return;
+                }
+            }
+        }
+
+        for(Graph.Node<V> nd : ts)
+            System.out.print(nd.value + " ");
+        System.out.println("");
+}
+
+private static<V> int DDFS(Graph.Node<V> nd, LinkedList<Graph.Node<V>> ts) {
+        if(nd.state == Graph.Node.Status.EXPLORING)
+            return 1;
+        
+        if(nd.state == Graph.Node.Status.EXPLORED)
+            return 0;
+        
+        nd.state = Graph.Node.Status.EXPLORING;
+        int ret = 0;
+        
+        for(Graph.Node<V> cur : nd.outEdges)
+            ret += DDFS(cur, ts);
+        
+        nd.state = Graph.Node.Status.EXPLORED;
+        ts.addFirst(nd);
+        return ret;
+}
+
+public static <V> void sweep(Graph<V> g) {
+        // Reset node's status
+        g.resetStatus();
+        
+        int loctime = 0;
+        for(Graph.Node<V> node : g.getNodes()) {
+            System.out.println("Root " + g.getNodeValue(node));
+            loctime += sweep_aux(node, loctime);
+        }
+}
+
+private static <V> int sweep_aux(Graph.Node<V> node, int time) {
+        if(node.state != Graph.Node.Status.UNEXPLORED)
+            return 0;
+        
+        int loctime = 1;
+        node.state = Graph.Node.Status.EXPLORING;
+        node.timestamp = time;
+        
+        for(Graph.Node<V> cur : node.outEdges) {
+            System.out.print("\t" + node.value + "(" + node.timestamp + ")->" + cur.value + "(" + cur.timestamp + ")");
+            
+            if (cur.state == Graph.Node.Status.EXPLORED) {
+                if (node.timestamp < cur.timestamp)
+                    System.out.println("FORWARD");
+                else
+                    System.out.println("CROSS");
+            }
+            else if (cur.state == Graph.Node.Status.EXPLORING) {
+                System.out.println("BACK");
+            }
+            else {
+                System.out.println("TREE");
+                loctime += sweep_aux(cur, time + 1);
+            }
+        }
+        
+        node.state = Graph.Node.Status.EXPLORED;
+        return loctime;
+}
+
+
+
+public static <V> void bfs(Graph<V> g) {
+        for(Node<V> n : g.getNodes()) {
+            if(n.state == Node.Status.UNEXPLORED)
+                bfsFromNode(g, n);
+        }
+}
+
+private static <V> void bfsFromNode(Graph<V> g, Node<V> source) {
+        if(!(source.state == Node.Status.UNEXPLORED))
+            return;
+
+        Queue<Node<V>> queue = new ArrayDeque<Node<V>>();
+        source.state = Node.Status.EXPLORED;
+        queue.add(source);
+        
+        while(!queue.isEmpty()) {
+            Node<V> u = queue.remove();
+            System.out.println(u.getValue());
+            
+            for(Edge<V> e : g.getOutEdges(u)) {
+                Node<V> v = e.getTarget();
+                if(v.state == Node.Status.UNEXPLORED){
+                    v.state = Node.Status.EXPLORED;
+                    queue.add(v);
+                }
+            }
+        }
+}
+
+public static <V> void kruskal(Graph<V> G) {
+        Partition<V> P;
+        MinHeap<Edge<V>> Q;
+
+        int i = 0;
+        for(Node<V> n : G.getNodes())
+            n.map = i++;
+
+        P = new Partition<V>(G.getNodes());
+        Q = new MinHeap<Edge<V>>();
+        for(Edge<V> e : G.getEdges())
+            Q.insert(e.getWeight(), e);
+
+        while(!Q.isEmpty())	{
+            Edge<V> e = Q.removeMin().getValue();
+            Node<V> u = e.getSource(), v = e.getTarget();
+            
+            if(P.find(u.map) != P.find(v.map)) {
+                System.out.println(u.getValue() + " " + v.getValue());
+                P.union(u.map, v.map);
+            }
+        }
+}
+
+public static <V> void prim(Graph<V> g, Node<V> source){
+	MinHeap<Edge<V>> Q = new MinHeap<>();
+	HashSet<Node<V>> visited = new HashSet<>();
+	visited.add(source);
+	
+	for(Edge<V> e : g.getOutEdges(source)){
+		Q.insert(e.getWeight(), e);
+	}
+	while(!Q.isEmpty()){
+		Edge<V> e = Q.removeMin().getValue();
+		Node<V> u = e.getSource(), v = e.getTarget();
+		
+		if(visited.contains(v)) continue;
+		
+		System.out.println(u.getValue() + " " + v.getValue());
+		visited.add(v);
+		
+		for(Edge<V> outEdge : g.getOutEdges(v)){
+			if(!visited.contains(outEdge.getTarget())){
+				Q.insert(outEdge.getWeight(), outEdge);
+			}
+		}
+	}
+}
+
+public static <V> void dijkstra(Graph<V> g, Node<V> source) {
+        MinHeap<Node<V>> pqueue = new MinHeap<Node<V>>();
+        HashMap<Node<V>, HeapEntry<Node<V>>> dist = new HashMap<Node<V>, HeapEntry<Node<V>>>();
+
+        final int INFINITY = 100000;
+        // (NB.: deve essere maggiore della somma di tutti i pesi del grafo)
+
+        // Inizializzazione
+        for(Node<V> u : g.getNodes()) {
+            HeapEntry<Node<V>> hu = pqueue.insert(u == source ? 0 : INFINITY, u);
+            dist.put(u, hu);
+        }
+
+        // Ciclo principale
+        while (!pqueue.isEmpty()) {
+            HeapEntry<Node<V>> hu = pqueue.removeMin();
+            Node<V> u = hu.getValue();
+
+            for(Edge<V> e : g.getOutEdges(u)) {
+                Node<V> v = e.getTarget();
+                if (dist.get(u).getKey() + e.getWeight() < dist.get(v).getKey())
+                    pqueue.replaceKey(dist.get(v), dist.get(u).getKey() + e.getWeight());
+            }
+        }
+
+        for(Node<V> u : g.getNodes())
+            System.out.println(u + " " + dist.get(u).getKey());
+}
+
+public static <V> void bellmanFord(Graph<V> g, Node<V> source) {
+	HashMap<Node<V>, Integer> dist = new HashMap<>();
+	
+	final int INFINITY = 100000;
+        // (NB.: deve essere maggiore della somma di tutti i pesi del grafo)
+        
+	for(Node<V> n : g.getNodes()){
+		dist.put(n, n==source ? 0 : INFINITY);
+	}
+	
+	for(int i = 0; i<g.getNodes().size()-1; i++){
+		for(Node<V> u : g.getNodes()){
+			for(Edge<V> e : g.getOutEdges(u)) {
+                		Node<V> v = e.getTarget();
+                		if (dist.get(u) != INFINITY && dist.get(u) + e.getWeight() < dist.get(v)){
+                			dist.put(v, dist.get(u) + e.getWeight());
+                		}
+			}
+		}
+	}
+	for(Node<V> u : g.getNodes()){
+		for(Edge<V> e : g.getOutEdges(u)) {
+			Node<V> v = e.getTarget();
+			if(dist.get(u) != INFINITY && dist.get(u) + e.getWeight() < dist.get(v)){
+				throw new RuntimeException("Graph contains a negative weight cycle");
+			}
+		}
+	}
+	for(Node<V> n : g.getNodes()){
+		System.out.println(n + " " + dist.get(n));
+	}
+}
